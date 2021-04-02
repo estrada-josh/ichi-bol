@@ -12,7 +12,7 @@ from statistics import mean
 def filters(file):
     tickers = []
     vol_lim = 5000000
-    price_min = 30.00
+    price_min = 20.00
     price_max = 100.00
 
     df = pd.read_csv(file, parse_dates = True, index_col=0)
@@ -72,9 +72,9 @@ def data(stock):
     # Adding Ichi Cloud
 
     # Conversion Line (blue line)
-    high_9 = df['High'].rolling(window= 8).max()
-    low_9 = df['Low'].rolling(window= 8).min()
-    df['Conv Line'] = (high_9 + low_9) /2
+    high_8 = df['High'].rolling(window= 8).max()
+    low_8 = df['Low'].rolling(window= 8).min()
+    df['Conv Line'] = (high_8 + low_8) /2
 
     # Base Line (Red line )
     high_22 = df['High'].rolling(window= 22).max()
@@ -189,6 +189,10 @@ def alerts(df):
     # Sets switch for bought or not bought positions
     bought = 0
 
+    # Buy and sell levels
+    buy_score = 300
+    sell_score = 600
+
     # Sets empty list to hold alerts
     alerts = []
 
@@ -198,24 +202,25 @@ def alerts(df):
 
     for i in df.index:
 
+        dates = i.date()
         symbol = df['Symbol'][i]
         price = round((df['Open'][i]), 2)
         score = df['Score'][i]
 
         # Alert to buy if score is 300
-        if score == 300:
+        if score == buy_score:
             if bought == 0:
                 bought = 1
-                alert = (i,'### Buy ### ',symbol,'@',price)
-                if i == today:
+                alert = (symbol,'### Buy ### @',price)
+                if dates == today:
                     alerts.append(alert)
 
         # If symbol is already bought and score is 600, alert to sell
-        elif score == 600:
+        elif score == sell_score:
             if bought == 1:
                 bought = 0
-                alert = (i, '### Sell ### ',symbol,'@',price)
-                if i == today:
+                alert = (symbol,'### Sell ### @',price)
+                if dates == today:
                     alerts.append(alert)
 
 

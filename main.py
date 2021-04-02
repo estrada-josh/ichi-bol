@@ -8,35 +8,52 @@ from pandas_datareader import data as pdr
 import requests
 from statistics import mean
 import funcs
+from flask import Flask
 
-tickers = []
-# files = ['test.csv']
-files = ['amex.csv','nasdaq.csv','nyse.csv']
+app = Flask(__name__)
 
-for file in files:
-    tick_list = funcs.filters(file)
-    for x in tick_list:
-        tickers.append(x)
+@app.route('/')
+def index():
+    return
 
-for ticker in tickers:
+    tickers = []
+    alerts_list = []
+    # files = ['test.csv']
+    files = ['amex.csv','nasdaq.csv','nyse.csv']
 
-    df = funcs.data(ticker)
-    score = funcs.scores(df)
-    alerts = funcs.alerts(score)
-    sim = funcs.sim(score)
+    for file in files:
+        tick_list = funcs.filters(file)
+        for x in tick_list:
+            tickers.append(x)
 
-    simlen = len(sim)
-    simtot = 0
-    for i in sim:
-        simtot = i + simtot
+    for ticker in tickers:
 
-    avg = round((simtot / simlen),2)
+        df = funcs.data(ticker)
+        score = funcs.scores(df)
+        alerts = funcs.alerts(score)
+        sim = funcs.sim(score)
 
-    if avg >= 10:
-        print()
-        print(ticker)
-        print(score.tail())
-        print()
-        print(sim)
-        print()
-        print(avg)
+        simlen = len(sim)
+        simtot = 0
+        for i in sim:
+            simtot = i + simtot
+
+        avg = round((simtot / simlen),2)
+
+        if avg >= 10:
+            print()
+            print(ticker)
+            print(score.tail(3))
+            print()
+            print('Trade Sim Results (%): ',sim)
+            print('Average return %: ',avg)
+            print()
+            if len(alerts) > 0:
+                alerts_list.append(alerts)
+
+    print('### ALERTS ###\n')
+    for alert in alerts_list:
+        print(alert)
+
+if __name__ == '__main__':
+    app.run()
