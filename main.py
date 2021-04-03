@@ -10,12 +10,6 @@ from statistics import mean
 import funcs
 from flask import Flask
 
-# app = Flask(__name__)
-#
-# @app.route('/')
-# def index():
-#     return
-
 tickers = []
 alerts_list = []
 # files = ['test.csv']
@@ -54,6 +48,3 @@ for ticker in tickers:
 print('### ALERTS ###\n')
 for alert in alerts_list:
     print(alert)
-
-# if __name__ == '__main__':
-#     app.run()
