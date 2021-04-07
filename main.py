@@ -8,7 +8,6 @@ from pandas_datareader import data as pdr
 import requests
 from statistics import mean
 import funcs
-from flask import Flask
 
 tickers = []
 alerts_list = []
