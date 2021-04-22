@@ -31,18 +31,19 @@ for ticker in tickers:
     for i in sim:
         simtot = i + simtot
 
-    avg = round((simtot / simlen),2)
+    if simlen > 0 and simtot > 0:
+        avg = round((simtot / simlen),2)
 
-    if avg >= 10:
-        print()
-        print(ticker)
-        print(score.tail(3))
-        print()
-        print('Trade Sim Results (%): ',sim)
-        print('Average return %: ',avg)
-        print()
-        if len(alerts) > 0:
-            alerts_list.append(alerts)
+        if avg >= 10:
+            print()
+            print(ticker)
+            print(score.tail(3))
+            print()
+            print('Trade Sim Results (%): ',sim)
+            print('Average return %: ',avg)
+            print()
+            if len(alerts) > 0:
+                alerts_list.append(alerts)
 
 print('### ALERTS ###\n')
 for alert in alerts_list:
