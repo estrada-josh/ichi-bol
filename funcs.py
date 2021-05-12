@@ -12,8 +12,8 @@ from statistics import mean
 def filters(file):
     tickers = []
     vol_lim = 5000000
-    price_min = 20.00
-    price_max = 100.00
+    price_min = 10.00
+    price_max = 500.00
 
     df = pd.read_csv(file, parse_dates = True, index_col=0)
     # for tic_p in df['Last Sale'].index:

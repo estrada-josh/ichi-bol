@@ -34,7 +34,7 @@ for ticker in tickers:
     if simlen > 0 and simtot > 0:
         avg = round((simtot / simlen),2)
 
-        if avg >= 10:
+        if avg >= 5:
             print()
             print(ticker)
             print(score.tail(3))
