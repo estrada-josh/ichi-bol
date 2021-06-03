@@ -27,6 +27,7 @@ for file in files:
         tickers.append(x)
 
 # Runs list of tickers through each function
+# Prints Dataframes and trade results
 for ticker in tickers:
 
     # Pulls price data from the web and creates dataframe
@@ -43,9 +44,9 @@ for ticker in tickers:
     sim = funcs.sim(score)
 
     # Calculate average results
-    simlen = len(sim)
+    simlen = len(sim[0])
     simtot = 0
-    for i in sim:
+    for i in sim[0]:
         simtot = i + simtot
 
     # Only shows tickers that had more than one buy or sell
@@ -56,10 +57,12 @@ for ticker in tickers:
         if avg >= 5:
             print()
             print(ticker)
-            print(score.tail(3))
+            print(score.tail())
             print()
-            print('Trade Sim Results (%): ',sim)
+            print(len(sim[0]),'trade Sim Results (%): ',sim[0])
             print('Average return %: ',avg)
+            if sim[1] != None:
+                print(sim[1])
             print()
             if len(alerts) > 0:
                 alerts_list.append(alerts)
@@ -67,4 +70,4 @@ for ticker in tickers:
 # Prints every buy and sell alert for the current day
 print('### ALERTS ###\n')
 for alert in alerts_list:
-    print(alert)
+    print(alert, '\n')

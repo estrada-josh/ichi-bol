@@ -183,52 +183,9 @@ def scores(df):
     return df
 
 # Reads through dataframe from scores function
-# Returns alerts if alerted on same day
-def alerts(df):
-
-    # Sets switch for bought or not bought positions
-    bought = 0
-
-    # Buy and sell levels
-    buy_score = 300
-    sell_score = 600
-
-    # Sets empty list to hold alerts
-    alerts = []
-
-    # Sets todays date
-    today = dt.date.today()
-
-
-    for i in df.index:
-
-        dates = i.date()
-        symbol = df['Symbol'][i]
-        price = round((df['Open'][i]), 2)
-        score = df['Score'][i]
-
-        # Alert to buy if score is 300
-        if score == buy_score:
-            if bought == 0:
-                bought = 1
-                alert = (symbol,'### Buy ### @',price)
-                if dates == today:
-                    alerts.append(alert)
-
-        # If symbol is already bought and score is 600, alert to sell
-        elif score == sell_score:
-            if bought == 1:
-                bought = 0
-                alert = (symbol,'### Sell ### @',price)
-                if dates == today:
-                    alerts.append(alert)
-
-
-    return alerts
-
-# Reads through dataframe from scores function
 # Simulates trading on historical price data
 # Returns printed report of P/L
+# Returns weather or not the stock is currently bought
 def sim(df):
 
     # Sets todays date
@@ -236,6 +193,10 @@ def sim(df):
 
     # Sets switch for bought or not bought positions
     bought = 0
+
+    # Buy and sell levels
+    buy_score = 300
+    sell_score = 0
 
     # Sets empty list to hold percent change per trade
     percents = []
@@ -247,14 +208,14 @@ def sim(df):
         score = df['Score'][i]
 
         # Alert to buy if score is 300
-        if score == 300:
+        if score == buy_score:
             if bought == 0:
                 bought = 1
                 # buy price
                 bp = price
 
         # If symbol is already bought and score is 600, alert to sell
-        elif score == 600:
+        elif score == sell_score:
             if bought == 1:
                 bought = 0
                 # sell price
@@ -271,4 +232,56 @@ def sim(df):
         #     pc = round((sp/bp-1)*100,2)
         #     percents.append(pc)
 
-    return percents
+    # sets up variable holding to return if the stock is currently bought
+    holding = None
+    if bought == 1:
+        holding = ('Currently holding ' + symbol)
+
+    return percents, holding
+
+# Reads through dataframe from scores function
+# Returns alerts if alerted on same day
+def alerts(df):
+
+    # Sets switch for bought or not bought positions
+    bought = 0
+
+    # Buy and sell levels
+    buy_score = 300
+    sell_score = 0
+
+    # Sets empty list to hold alerts
+    alerts = []
+
+    # Sets todays date
+    today = dt.date.today()
+
+
+    for i in df.index:
+
+        dates = i.date()
+        i_str = str(i)
+        time = i_str[11:19]
+
+        symbol = df['Symbol'][i]
+        price = round((df['Open'][i]), 2)
+        score = df['Score'][i]
+
+        # Alert to buy if score is 300
+        if score == buy_score:
+            if bought == 0:
+                bought = 1
+                alert = (str(symbol) + ' ### Buy ### @ ' + time + ' Price: $'+str(price))
+                if dates == today:
+                    alerts.append(alert)
+
+        # If symbol is already bought and score is 600, alert to sell
+        elif score == sell_score:
+            if bought == 1:
+                bought = 0
+                alert = (str(symbol) + ' ### Sell ### @ ' + time + ' Price: $'+str(price))
+                if dates == today:
+                    alerts.append(alert)
+
+
+    return alerts
