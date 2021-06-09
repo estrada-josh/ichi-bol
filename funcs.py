@@ -12,7 +12,7 @@ from statistics import mean
 def filters(file):
     tickers = []
     vol_lim = 5000000
-    price_min = 10.00
+    price_min = 6.00
     price_max = 500.00
 
     df = pd.read_csv(file, parse_dates = True, index_col=0)
@@ -188,41 +188,70 @@ def scores(df):
 # Returns weather or not the stock is currently bought
 def sim(df):
 
-    # Sets todays date
+    # Sets todays date and sets a purchase date variable
     today = dt.date.today()
+    pur_date = None
+    sel_date = None
+    pur_info = None
+    sel_info = None
 
     # Sets switch for bought or not bought positions
     bought = 0
 
     # Buy and sell levels
     buy_score = 300
-    sell_score = 0
+    sell_score = 600
 
-    # Sets empty list to hold percent change per trade
+    # Sets empty list to hold percent change per trade and show trades
     percents = []
+    trades = {}
 
     for i in df.index:
 
         symbol = df['Symbol'][i]
-        price = round((df['Open'][i]), 2)
+        price = round((df['Close'][i]), 2)
         score = df['Score'][i]
 
         # Alert to buy if score is 300
         if score == buy_score:
             if bought == 0:
                 bought = 1
-                # buy price
+
+                # purchase info
                 bp = price
+                pur_date = i.date()
+                i_str = str(i)
+                time = i_str[11:16]
+
+                # purchase info string and add to trades dic
+                pur_info = ('Bought at $' + str(bp) + ' ' + str(pur_date))
+
 
         # If symbol is already bought and score is 600, alert to sell
         elif score == sell_score:
             if bought == 1:
                 bought = 0
+
                 # sell price
                 sp = price
+
+                # sell info
+                sel_date = i.date()
+                i_str = str(i)
+                time = i_str[11:16]
+
+                # sell info string and add to trades dic
+                sel_info = ('Sold at $' + str(sp) + ' ' + str(sel_date))
+
                 # Percent change (pc) calculation
                 pc = round((sp/bp-1)*100,2)
                 percents.append(pc)
+
+                trades[pur_info] = sel_info
+
+
+        # insert into trade dict
+        # if pur_info != None and sel_info != None:
 
         # # Close positions if today
         # if i == today and bought == 1:
@@ -234,10 +263,14 @@ def sim(df):
 
     # sets up variable holding to return if the stock is currently bought
     holding = None
-    if bought == 1:
-        holding = ('Currently holding ' + symbol)
+    holding_symbol = None
 
-    return percents, holding
+    # If stock is bought, remember when it was bought and at what price
+    if bought == 1:
+        holding = ('Currently holding; ' + pur_info + ' ' + time)
+        holding_symbol = symbol
+
+    return percents, holding, holding_symbol, trades
 
 # Reads through dataframe from scores function
 # Returns alerts if alerted on same day
@@ -248,7 +281,7 @@ def alerts(df):
 
     # Buy and sell levels
     buy_score = 300
-    sell_score = 0
+    sell_score = 600
 
     # Sets empty list to hold alerts
     alerts = []
@@ -261,7 +294,7 @@ def alerts(df):
 
         dates = i.date()
         i_str = str(i)
-        time = i_str[11:19]
+        time = i_str[11:16]
 
         symbol = df['Symbol'][i]
         price = round((df['Open'][i]), 2)
@@ -271,7 +304,7 @@ def alerts(df):
         if score == buy_score:
             if bought == 0:
                 bought = 1
-                alert = (str(symbol) + ' ### Buy ### @ ' + time + ' Price: $'+str(price))
+                alert = (str(symbol) + ': ' + str(dates) + ' ### Buy ### @ $'+str(price))
                 if dates == today:
                     alerts.append(alert)
 
@@ -279,9 +312,10 @@ def alerts(df):
         elif score == sell_score:
             if bought == 1:
                 bought = 0
-                alert = (str(symbol) + ' ### Sell ### @ ' + time + ' Price: $'+str(price))
+                alert = (str(symbol) + ': ' + str(dates) + ' ### Sell ### @ '+str(price))
                 if dates == today:
                     alerts.append(alert)
+
 
 
     return alerts

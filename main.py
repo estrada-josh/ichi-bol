@@ -14,6 +14,7 @@ import funcs
 # Lists to be populated by later operations
 tickers = []
 alerts_list = []
+holding_symbols = []
 
 # files = ['test.csv']
 files = ['amex.csv','nasdaq.csv','nyse.csv']
@@ -21,6 +22,7 @@ files = ['amex.csv','nasdaq.csv','nyse.csv']
 # Looks through the files listed in 'files'
 # 'filters' function returns a narrowed down list of tickers
 #  the tickers are then added to the empty list created above
+
 for file in files:
     tick_list = funcs.filters(file)
     for x in tick_list:
@@ -54,20 +56,30 @@ for ticker in tickers:
         avg = round((simtot / simlen),2)
 
         # prints results for ticker
-        if avg >= 5:
-            print()
-            print(ticker)
-            print(score.tail())
-            print()
-            print(len(sim[0]),'trade Sim Results (%): ',sim[0])
-            print('Average return %: ',avg)
-            if sim[1] != None:
-                print(sim[1])
-            print()
-            if len(alerts) > 0:
-                alerts_list.append(alerts)
+        if avg >= 10:
+            if len(sim[0]) >= 5:
+                print()
+                print(ticker)
+                # print(score.tail())
+                print()
+                print(len(sim[0]),'trade Sim Results (%): ',sim[0])
+                print('Average return %: ',avg)
+                print()
+                if len(alerts) > 0:
+                    alerts_list.append(alerts)
+                if sim[2] != None:
+                    holding_symbols.append(sim[2])
+                print('TRADES: \n')
+                for row in sim[3]:
+                    print(row, sim[3][row], '\n')
+                if sim[1] != None:
+                    print(sim[1], '\n')
+                print('#################################')
+
+
 
 # Prints every buy and sell alert for the current day
 print('### ALERTS ###\n')
 for alert in alerts_list:
     print(alert, '\n')
+print('Currently holding',len(holding_symbols), 'stocks:', holding_symbols)
