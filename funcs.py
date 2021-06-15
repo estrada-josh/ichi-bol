@@ -11,9 +11,9 @@ from statistics import mean
 # Returns list of tickers
 def filters(file):
     tickers = []
-    vol_lim = 5000000
-    price_min = 6.00
-    price_max = 500.00
+    vol_lim = 500000
+    price_min = 5.00
+    price_max = 12.00
 
     df = pd.read_csv(file, parse_dates = True, index_col=0)
     # for tic_p in df['Last Sale'].index:
@@ -41,12 +41,12 @@ def data(stock):
         # use "period" instead of start/end
         # valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,5y,10y,ytd,max
         # (optional, default is '1mo')
-        period = "60d",
+        period = "ytd",
 
         # fetch data by interval (including intraday if period < 60 days)
         # valid intervals: 1m,2m,5m,15m,30m,60m,90m,1h,1d,5d,1wk,1mo,3mo
         # (optional, default is '1d')
-        interval = "30m",
+        interval = "1h",
 
         # adjust all OHLC automatically
         # (optional, default is False)
@@ -62,12 +62,26 @@ def data(stock):
     # Add column with Ticker for alerting purposes
     df['Symbol'] = stock
 
+    # RSI formula and put it in a new RSI column in the dataframe
+    # variables that contain average value over 14 days of differences in price per day
+    # ema_up = up.ewm(com=13, adjust=False).mean()
+    # ema_down = down.ewm(com=13, adjust=False).mean()
+    # rs = ema_up/ema_down
+    # df['RSI'] = round(100 - (100/(1 + rs)),2)
+
     # Adding Bollinger Bands
     df['MA20'] = df['Adj Close'].rolling(window = 20).mean()
     df['20dSTD'] = df['Adj Close'].rolling(window = 20).std()
 
     df['Upper'] = df['MA20'] + (df['20dSTD'] * 2)
     df['Lower'] = df['MA20'] - (df['20dSTD'] * 2)
+
+    # Adding MAs
+    df['MA60'] = df['Adj Close'].rolling(window = 60).mean()
+    df['MA120'] = df['Adj Close'].rolling(window = 120).mean()
+
+    # Adding Vol MA over 60 periods
+    df['MA Vol'] = df['Volume'].rolling(window = 60).mean()
 
     # Adding Ichi Cloud
 
@@ -92,6 +106,7 @@ def data(stock):
     # Lagging Span (Dark Green Line)
     # df['Lag Span'] = df['Close'].shift(-26)
 
+    # print(stock + ' data frame complete')
     return df
 
 # Reads through a dataframe and scores each interval based on criteria
@@ -103,16 +118,27 @@ def scores(df):
 
     for i in df.index:
 
+
+        # Standard Price info
         high = df['High'][i]
         low = df['Low'][i]
         close = df['Adj Close'][i]
         open = df['Open'][i]
+        vol_avg = df['MA Vol'][i]
+        vol = df['Volume'][i]
+
+        # RSI
+        # rsi = df['RSI'][i]
 
         # Bollinger Band identifiers
         bol_top = df['Upper'][i]
         bol_mid = df['MA20'][i]
         bol_bot = df['Lower'][i]
         bol_vla = df['20dSTD'][i]
+
+        # MA 60 and 120
+        ma60 = df['MA60'][i]
+        ma120 = df['MA120'][i]
 
         # Ichimoku Cloud identifiers
         conv = df['Conv Line'][i]
@@ -127,53 +153,30 @@ def scores(df):
         # lag_span_b = df['Span B'].iloc[[-27]]
 
         ############################################
+        # Score reset to read summary df more easily
+
         # Trade conditions
+        if score == 1300:
+            score = 1
 
-        # Step 1. A full candle opening and closing above conversion line
-        if close > conv and open < close:
-            score = 100
+        # Buy conditions
+        if conv < bol_mid and open < conv:
+            if close > conv and close > bol_mid and vol > vol_avg and close > base:
+                score = 1300
 
-        if open > close and close < conv:
+
+        if score == 1600:
             score = 0
 
-        # Step 2. If above is true; Conversion above base line and mid bollinger
-        if score == 100:
-            if conv > base and conv > bol_mid:
-                score = 200
-            else:
-                score = 100
+        # Selling conditions
+        if open > bol_top and open > conv and open > base:
+            score = 1500
 
-        # Step 3. If above true; if price opens and closes above ichi cloud
-        if score == 200:
-            if open > span_a and open > span_b and close > open:
-                score = 300
-            else:
-                score = 200
-
-        # Step 4. If above is true and price closes above top bollinger move to step 5.
-        if score == 300:
-            if close > open and close > bol_top:
-                score = 400
-            else:
-                score = 300
-
-        # Step 5. If price opens and closes red below top bollinge  r get ready to sell if step 6 is acheived
-        if score == 400:
+        if score == 1500:
             if close < bol_top:
-                score = 500
-            else:
-                score = 400
-
-        # Step 6. If price opens and closes red again, sell at next open
-        if score == 500:
-            if open > close:
-                score = 600
-            else:
-                score = 500
+                score = 1600
 
         scores.append(score)
-
-
         ############################################
 
 
@@ -199,8 +202,8 @@ def sim(df):
     bought = 0
 
     # Buy and sell levels
-    buy_score = 300
-    sell_score = 600
+    buy_score = 1300
+    sell_score = 1600
 
     # Sets empty list to hold percent change per trade and show trades
     percents = []
@@ -224,11 +227,10 @@ def sim(df):
                 time = i_str[11:16]
 
                 # purchase info string and add to trades dic
-                pur_info = ('Bought at $' + str(bp) + ' ' + str(pur_date))
-
+                pur_info = ('Bought at $' + str(bp) + ' ' + str(pur_date) + ' ' + time + ' ##')
 
         # If symbol is already bought and score is 600, alert to sell
-        elif score == sell_score:
+        if score == sell_score:
             if bought == 1:
                 bought = 0
 
@@ -241,13 +243,14 @@ def sim(df):
                 time = i_str[11:16]
 
                 # sell info string and add to trades dic
-                sel_info = ('Sold at $' + str(sp) + ' ' + str(sel_date))
+                sel_info = ('Sold at $' + str(sp) + ' ' + str(sel_date) + ' ' + time)
 
                 # Percent change (pc) calculation
                 pc = round((sp/bp-1)*100,2)
                 percents.append(pc)
 
                 trades[pur_info] = sel_info
+
 
 
         # insert into trade dict
@@ -267,7 +270,7 @@ def sim(df):
 
     # If stock is bought, remember when it was bought and at what price
     if bought == 1:
-        holding = ('Currently holding; ' + pur_info + ' ' + time)
+        holding = ('Currently holding; ' + pur_info)
         holding_symbol = symbol
 
     return percents, holding, holding_symbol, trades
@@ -280,8 +283,8 @@ def alerts(df):
     bought = 0
 
     # Buy and sell levels
-    buy_score = 300
-    sell_score = 600
+    buy_score = 1300
+    sell_score = 1600
 
     # Sets empty list to hold alerts
     alerts = []
@@ -297,14 +300,14 @@ def alerts(df):
         time = i_str[11:16]
 
         symbol = df['Symbol'][i]
-        price = round((df['Open'][i]), 2)
+        price = round((df['Close'][i]), 2)
         score = df['Score'][i]
 
         # Alert to buy if score is 300
         if score == buy_score:
             if bought == 0:
                 bought = 1
-                alert = (str(symbol) + ': ' + str(dates) + ' ### Buy ### @ $'+str(price))
+                alert = (str(symbol) + ': ### Buy ### @ $' + str(price) + ' ' + str(dates) + ' ## ' + time)
                 if dates == today:
                     alerts.append(alert)
 
@@ -312,7 +315,7 @@ def alerts(df):
         elif score == sell_score:
             if bought == 1:
                 bought = 0
-                alert = (str(symbol) + ': ' + str(dates) + ' ### Sell ### @ '+str(price))
+                alert = (str(symbol) + ' ### Sell ### @ '+str(price) + ' @ ' + str(dates) + ' ## ' + time)
                 if dates == today:
                     alerts.append(alert)
 
